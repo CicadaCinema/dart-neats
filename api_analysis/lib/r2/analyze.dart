@@ -86,7 +86,9 @@ Future<PackageShape> analyzePackage(String packagePath) async {
   // Mark the defined functions as exported.
   for (final lib in package.libraries.values) {
     assert(lib.exports.isEmpty);
-    lib.exportedShapes.addAll(lib.definedShapes);
+    lib.exportedShapes.addEntries(
+      lib.definedShapes.entries.where((s) => !s.key.startsWith('_')),
+    );
   }
 
   // Propogate all exports
