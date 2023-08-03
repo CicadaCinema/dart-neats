@@ -30,7 +30,9 @@ Future<void> main(List<String> args) async {
   }
 
   final packagePath = Directory.current.uri.resolve(args.first);
-  await analyzePackage(packagePath.toFilePath());
+  final packageShape = await analyzePackage(packagePath.toFilePath());
+
+  print(packageShape.toJsonSummary());
 }
 
 /// Thrown when shape analysis fails.
@@ -81,14 +83,22 @@ Future<PackageShape> analyzePackage(String packagePath) async {
     package.addLibrary(library);
   }
 
-  // Propogate all exports
+  // Mark the defined functions as exported.
   for (final lib in package.libraries.values) {
-    for (final e in lib.exports.values) {
-      // TODO: Continue here
-      print(e);
-    }
+    assert(lib.exports.isEmpty);
+    lib.exportedShapes.addEntries(
+      lib.definedShapes.entries.where((s) => !s.key.startsWith('_')),
+    );
   }
 
+  // Propogate all exports
+  bool changed;
+  do {
+    changed = false;
+    for (final lib in package.libraries.values) {
+      changed = changed || package.propagateExports(lib);
+    }
+  } while (changed);
   return package;
 }
 
@@ -170,13 +180,51 @@ extension on PackageShape {
     }
   }
 
-  /*
-  void propogateExports(LibraryShape library) {
-    for (final lib in libraries) {
-      lib.exports.firstWhere((e) => e.uri == library.uri);
-      // TODO: Finish this...
+  // TODO: is the opposite of 'transitive export', 'direct export'?
+  /// Iterate over the direct exports of this library and merge the set of
+  /// exported shapes of those libraries into this one.
+  /// Returns [true] if the shape of [library] has been changed as a result.
+  bool propagateExports(LibraryShape library) {
+    var changed = false;
+    for (final exportEntry in library.exports.entries) {
+      final exportedLibrary = libraries[exportEntry.key];
+      if (exportedLibrary == null) {
+        // TODO: In this case, consider the shapes of the dependencies of this package.
+        print(
+            'The library ${exportEntry.key.toString()} appears in an export, but it does not exist in the definition of this package');
+        continue;
+      }
+      final exportFilter = exportEntry.value;
+
+      // The symbols made available by this direct export. Note that despite the
+      // fact that the export is direct, [propagateExports] may have been already
+      // called on the exported library, so these symbols are not necessarily ones
+      // which have been defined in the exported library.
+      // TODO: maybe instead of `bool isVisible(String symbol)` we could have `List<String> visibleSymbols(List<String> symbols)` to reflect the common use of a method of this kind?
+      final exportedSymbols = exportedLibrary.exportedShapes.entries
+          .where((e) => exportFilter.isVisible(e.key));
+
+      // If two non-identical symbols are exported under the same name but are not
+      // defined in this library, we cannot continue.
+      for (final symbol in exportedSymbols) {
+        if (library.definedShapes.containsKey(symbol.key)) {
+          // The current library defines a symbol with this name, which shadows any imported symbol.
+          continue;
+        } else if (library.exportedShapes.containsKey(symbol.key) &&
+            !library.exportedShapes[symbol.key]!.equals(symbol.value)) {
+          // A symbol sharing the same name, but with a different shape, is exported in this library, which is a compile error.
+          _fail(
+              'Two symbols found to be exported with the same name ${symbol.key}, but different shapes.');
+        } else if (library.exportedShapes.containsKey(symbol.key)) {
+          // A symbol with the same name and shape is already exported.
+          continue;
+        }
+        library.exportedShapes[symbol.key] = symbol.value;
+        changed = true;
+      }
     }
-  }*/
+    return changed;
+  }
 }
 
 extension on LibraryShape {
