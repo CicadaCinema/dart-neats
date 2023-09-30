@@ -18,15 +18,11 @@ library;
 
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../common.dart' show PackageSchemeExt;
 
 part 'shapes.g.dart';
-
-bool Function(List<dynamic>?, List<dynamic>?) listEquals =
-    const ListEquality().equals;
 
 class PackageShape {
   final String name;
@@ -262,14 +258,6 @@ sealed class LibraryMemberShape {
     required this.name,
   });
 
-  @override
-  @mustBeOverridden
-  int get hashCode;
-
-  @override
-  @mustBeOverridden
-  bool operator ==(Object other);
-
   Map<String, dynamic> toJson();
 }
 
@@ -284,21 +272,6 @@ final class FunctionShape extends LibraryMemberShape {
     required this.namedParameters,
   });
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is FunctionShape &&
-          name == other.name &&
-          listEquals(positionalParameters, other.positionalParameters) &&
-          listEquals(namedParameters, other.namedParameters);
-
-  @override
-  int get hashCode => Object.hash(
-        name,
-        Object.hashAll(positionalParameters),
-        Object.hashAll(namedParameters),
-      );
-
   factory FunctionShape.fromJson(Map<String, dynamic> json) =>
       _$FunctionShapeFromJson(json);
 
@@ -309,13 +282,6 @@ final class FunctionShape extends LibraryMemberShape {
 @JsonSerializable()
 final class EnumShape extends LibraryMemberShape {
   EnumShape({required super.name});
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is EnumShape && name == other.name;
-
-  @override
-  int get hashCode => name.hashCode;
 
   factory EnumShape.fromJson(Map<String, dynamic> json) =>
       _$EnumShapeFromJson(json);
@@ -328,13 +294,6 @@ final class EnumShape extends LibraryMemberShape {
 final class ClassShape extends LibraryMemberShape {
   ClassShape({required super.name});
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is ClassShape && name == other.name;
-
-  @override
-  int get hashCode => name.hashCode;
-
   factory ClassShape.fromJson(Map<String, dynamic> json) =>
       _$ClassShapeFromJson(json);
 
@@ -345,13 +304,6 @@ final class ClassShape extends LibraryMemberShape {
 @JsonSerializable()
 final class MixinShape extends LibraryMemberShape {
   MixinShape({required super.name});
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is MixinShape && name == other.name;
-
-  @override
-  int get hashCode => name.hashCode;
 
   factory MixinShape.fromJson(Map<String, dynamic> json) =>
       _$MixinShapeFromJson(json);
@@ -364,13 +316,6 @@ final class MixinShape extends LibraryMemberShape {
 final class ExtensionShape extends LibraryMemberShape {
   ExtensionShape({required super.name});
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is ExtensionShape && name == other.name;
-
-  @override
-  int get hashCode => name.hashCode;
-
   factory ExtensionShape.fromJson(Map<String, dynamic> json) =>
       _$ExtensionShapeFromJson(json);
 
@@ -382,14 +327,6 @@ final class ExtensionShape extends LibraryMemberShape {
 final class FunctionTypeAliasShape extends LibraryMemberShape {
   FunctionTypeAliasShape({required super.name});
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is FunctionTypeAliasShape && name == other.name;
-
-  @override
-  int get hashCode => name.hashCode;
-
   factory FunctionTypeAliasShape.fromJson(Map<String, dynamic> json) =>
       _$FunctionTypeAliasShapeFromJson(json);
 
@@ -400,14 +337,6 @@ final class FunctionTypeAliasShape extends LibraryMemberShape {
 @JsonSerializable()
 final class ClassTypeAliasShape extends LibraryMemberShape {
   ClassTypeAliasShape({required super.name});
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ClassTypeAliasShape && name == other.name;
-
-  @override
-  int get hashCode => name.hashCode;
 
   factory ClassTypeAliasShape.fromJson(Map<String, dynamic> json) =>
       _$ClassTypeAliasShapeFromJson(json);
@@ -427,17 +356,6 @@ final class VariableShape extends LibraryMemberShape {
     required this.hasSetter,
   });
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is VariableShape &&
-          name == other.name &&
-          hasGetter == other.hasGetter &&
-          hasSetter == other.hasSetter;
-
-  @override
-  int get hashCode => Object.hash(name, hasGetter, hasSetter);
-
   factory VariableShape.fromJson(Map<String, dynamic> json) =>
       _$VariableShapeFromJson(json);
 
@@ -453,13 +371,6 @@ final class PositionalParameterShape {
     required this.isOptional,
   });
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is PositionalParameterShape && isOptional == other.isOptional;
-
-  @override
-  int get hashCode => isOptional.hashCode;
   factory PositionalParameterShape.fromJson(Map<String, dynamic> json) =>
       _$PositionalParameterShapeFromJson(json);
   Map<String, dynamic> toJson() => _$PositionalParameterShapeToJson(this);
@@ -475,15 +386,6 @@ final class NamedParameterShape {
     required this.isRequired,
   });
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is NamedParameterShape &&
-          name == other.name &&
-          isRequired == other.isRequired;
-
-  @override
-  int get hashCode => Object.hash(name, isRequired);
   factory NamedParameterShape.fromJson(Map<String, dynamic> json) =>
       _$NamedParameterShapeFromJson(json);
   Map<String, dynamic> toJson() => _$NamedParameterShapeToJson(this);
