@@ -76,6 +76,7 @@ const _usage = '''Usage:
 - analyze.dart local <package-path>
 - analyze.dart hosted <package-name>''';
 const _commands = ['local', 'hosted'];
+const indentedEncoder = JsonEncoder.withIndent('  ');
 
 Future<void> main(List<String> args) async {
   if (args.length != 2 || !_commands.contains(args[0])) {
@@ -86,108 +87,46 @@ Future<void> main(List<String> args) async {
   if (args[0] == _commands[0]) {
     final packagePath = Directory.current.uri.resolve(args[1]);
     final packageShape = await analyzePackage(packagePath.toFilePath());
-    print(JsonEncoder.withIndent('  ')
-        .convert(packageShape.toJsonNormalPublicSummary()));
+    print(indentedEncoder.convert(packageShape.toJsonNormalPublicSummary()));
   } else if (args[0] == _commands[1]) {
     await PubApi.withApi((api) async {
-      final t = args[1];
-      final info = await api.listVersions(t);
-      // Sort versions in ascending order.
-      final versions = info.versions.sortedByCompare(
-        (pv) => pv.version,
-        (a, b) => a.compareTo(b),
-      );
+      final info = await api.listVersions(args[1]);
+      // TODO: Can we assume that the versions are already sorted in ascending order?
+      final pv = info.versions.last;
+      assert(pv.pubspec.dart3Compatible);
 
-      PackageShape? prevShape;
-      for (final pv in versions) {
-        if (!pv.pubspec.dart3Compatible) {
-          continue;
-        }
-
-        final files = await api.fetchPackage(pv.archiveUrl);
-        final packagePath = '/pkg';
-        final fs = OverlayResourceProvider(PhysicalResourceProvider.INSTANCE);
-        for (final f in files) {
-          fs.setOverlay(
-            '$packagePath/${f.path}',
-            content: utf8.decode(f.bytes, allowMalformed: true),
-            modificationStamp: 0,
-          );
-        }
-        final lv = pv.pubspec.languageVersion;
+      final files = await api.fetchPackage(pv.archiveUrl);
+      final packagePath = '/pkg';
+      final fs = OverlayResourceProvider(PhysicalResourceProvider.INSTANCE);
+      for (final f in files) {
         fs.setOverlay(
-          '$packagePath/.dart_tool/package_config.json',
-          content: json.encode({
-            'configVersion': 2,
-            'packages': [
-              {
-                'name': pv.pubspec.name,
-                'rootUri': packagePath,
-                'packageUri': 'lib/',
-                'languageVersion': '${lv.major}.${lv.minor}'
-              }
-            ],
-            'generated': DateTime.now().toUtc().toIso8601String(),
-            'generator': 'pub',
-            'generatorVersion': '3.0.5'
-          }),
+          '$packagePath/${f.path}',
+          content: utf8.decode(f.bytes, allowMalformed: true),
           modificationStamp: 0,
         );
-
-        final packageShape = await analyzePackage(packagePath, fs: fs);
-
-        if (prevShape != null) {
-          final libraryChanges = <Uri, LibraryShapeChange>{};
-
-          // TODO: handle libraries that have been added or removed between package versions.
-          final commonPublicLibraries = packageShape.libraries.entries
-              .map((e) => e.key)
-              .where((l) => prevShape!.libraries.containsKey(l))
-              .where((l) => !l.isInPrivateLibrary);
-          for (final libraryKey in commonPublicLibraries) {
-            final change = diffLibraryShapes(
-              prevShape.libraries[libraryKey]!,
-              packageShape.libraries[libraryKey]!,
-            );
-            if (change.added.isNotEmpty ||
-                change.removed.isNotEmpty ||
-                change.modified.isNotEmpty) {
-              assert(!libraryChanges.containsKey(libraryKey));
-              libraryChanges[libraryKey] = change;
-            }
-          }
-
-          if (libraryChanges.isNotEmpty) {
-            print(
-                '====== ${packageShape.name}: ${prevShape.version.toString()} -> ${packageShape.version.toString()} ======');
-            for (final change in libraryChanges.entries) {
-              print('  ${change.key.toString()}');
-              if (change.value.added.isNotEmpty) {
-                print('    ADDED:');
-              }
-              for (final addedLibrary in change.value.added) {
-                print('     - ${jsonEncode(addedLibrary.toJson())}');
-              }
-              if (change.value.removed.isNotEmpty) {
-                print('    REMOVED:');
-              }
-              for (final removedLibrary in change.value.removed) {
-                print('     - ${jsonEncode(removedLibrary.toJson())}');
-              }
-              if (change.value.modified.isNotEmpty) {
-                print('    MODIFIED:');
-              }
-              for (final modifiedLibrary in change.value.modified) {
-                print('     - ${jsonEncode(modifiedLibrary.prev.toJson())}');
-                print('       ->');
-                print('       ${jsonEncode(modifiedLibrary.next.toJson())}');
-              }
-            }
-          }
-        }
-
-        prevShape = packageShape;
       }
+      final lv = pv.pubspec.languageVersion;
+      fs.setOverlay(
+        '$packagePath/.dart_tool/package_config.json',
+        content: json.encode({
+          'configVersion': 2,
+          'packages': [
+            {
+              'name': pv.pubspec.name,
+              'rootUri': packagePath,
+              'packageUri': 'lib/',
+              'languageVersion': '${lv.major}.${lv.minor}'
+            }
+          ],
+          'generated': DateTime.now().toUtc().toIso8601String(),
+          'generator': 'pub',
+          'generatorVersion': '3.0.5'
+        }),
+        modificationStamp: 0,
+      );
+
+      final packageShape = await analyzePackage(packagePath, fs: fs);
+      print(indentedEncoder.convert(packageShape.toJsonNormalPublicSummary()));
     });
   } else {
     throw StateError('Unknown command.');
