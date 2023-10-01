@@ -6,6 +6,78 @@ part of 'shapes.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+PackageShape _$PackageShapeFromJson(Map<String, dynamic> json) =>
+    PackageShape._allFields(
+      name: json['name'] as String,
+      version: _versionFromJson(json['version'] as Object),
+      libraries: (json['libraries'] as Map<String, dynamic>).map(
+        (k, e) => MapEntry(
+            Uri.parse(k), LibraryShape.fromJson(e as Map<String, dynamic>)),
+      ),
+    );
+
+Map<String, dynamic> _$PackageShapeToJson(PackageShape instance) =>
+    <String, dynamic>{
+      'name': instance.name,
+      'version': _versionToJson(instance.version),
+      'libraries':
+          instance.libraries.map((k, e) => MapEntry(k.toString(), e.toJson())),
+    };
+
+LibraryShape _$LibraryShapeFromJson(Map<String, dynamic> json) =>
+    LibraryShape._allFields(
+      uri: Uri.parse(json['uri'] as String),
+      imports: (json['imports'] as Map<String, dynamic>).map(
+        (k, e) => MapEntry(
+            k,
+            (e as Map<String, dynamic>).map(
+              (k, e) => MapEntry(Uri.parse(k),
+                  NamespaceFilter.fromJson(e as Map<String, dynamic>)),
+            )),
+      ),
+      exports: (json['exports'] as Map<String, dynamic>).map(
+        (k, e) => MapEntry(
+            Uri.parse(k), NamespaceFilter.fromJson(e as Map<String, dynamic>)),
+      ),
+      definedShapes: (json['definedShapes'] as Map<String, dynamic>).map(
+        (k, e) =>
+            MapEntry(k, LibraryMemberShape.fromJson(e as Map<String, dynamic>)),
+      ),
+    );
+
+Map<String, dynamic> _$LibraryShapeToJson(LibraryShape instance) =>
+    <String, dynamic>{
+      'uri': instance.uri.toString(),
+      'imports': instance.imports.map((k, e) =>
+          MapEntry(k, e.map((k, e) => MapEntry(k.toString(), e.toJson())))),
+      'exports':
+          instance.exports.map((k, e) => MapEntry(k.toString(), e.toJson())),
+      'definedShapes':
+          instance.definedShapes.map((k, e) => MapEntry(k, e.toJson())),
+    };
+
+NamespaceShowFilter _$NamespaceShowFilterFromJson(Map<String, dynamic> json) =>
+    NamespaceShowFilter(
+      (json['show'] as List<dynamic>).map((e) => e as String).toSet(),
+    );
+
+Map<String, dynamic> _$NamespaceShowFilterToJson(
+        NamespaceShowFilter instance) =>
+    <String, dynamic>{
+      'show': instance.show.toList(),
+    };
+
+NamespaceHideFilter _$NamespaceHideFilterFromJson(Map<String, dynamic> json) =>
+    NamespaceHideFilter(
+      (json['hide'] as List<dynamic>).map((e) => e as String).toSet(),
+    );
+
+Map<String, dynamic> _$NamespaceHideFilterToJson(
+        NamespaceHideFilter instance) =>
+    <String, dynamic>{
+      'hide': instance.hide.toList(),
+    };
+
 FunctionShape _$FunctionShapeFromJson(Map<String, dynamic> json) =>
     FunctionShape(
       name: json['name'] as String,
@@ -21,8 +93,10 @@ FunctionShape _$FunctionShapeFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$FunctionShapeToJson(FunctionShape instance) =>
     <String, dynamic>{
       'name': instance.name,
-      'positionalParameters': instance.positionalParameters,
-      'namedParameters': instance.namedParameters,
+      'positionalParameters':
+          instance.positionalParameters.map((e) => e.toJson()).toList(),
+      'namedParameters':
+          instance.namedParameters.map((e) => e.toJson()).toList(),
     };
 
 EnumShape _$EnumShapeFromJson(Map<String, dynamic> json) => EnumShape(

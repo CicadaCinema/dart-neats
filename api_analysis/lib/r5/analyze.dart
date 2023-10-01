@@ -87,7 +87,7 @@ Future<void> main(List<String> args) async {
   if (args[0] == _commands[0]) {
     final packagePath = Directory.current.uri.resolve(args[1]);
     final packageShape = await analyzePackage(packagePath.toFilePath());
-    print(indentedEncoder.convert(packageShape.toJsonNormalPublicSummary()));
+    print(indentedEncoder.convert(packageShape.toJson()));
   } else if (args[0] == _commands[1]) {
     await PubApi.withApi((api) async {
       final info = await api.listVersions(args[1]);
@@ -126,7 +126,7 @@ Future<void> main(List<String> args) async {
       );
 
       final packageShape = await analyzePackage(packagePath, fs: fs);
-      print(indentedEncoder.convert(packageShape.toJsonNormalPublicSummary()));
+      print(indentedEncoder.convert(packageShape.toJson()));
     });
   } else {
     throw StateError('Unknown command.');
