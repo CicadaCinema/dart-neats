@@ -25,7 +25,7 @@ part 'shapes.g.dart';
 Version _versionFromJson(Object json) => Version.parse(json as String);
 String _versionToJson(Version version) => version.canonicalizedVersion;
 
-@JsonSerializable(explicitToJson: true, constructor: '_allFields')
+@JsonSerializable(constructor: '_allFields')
 class PackageShape {
   final String name;
 
@@ -52,7 +52,7 @@ class PackageShape {
   Map<String, dynamic> toJson() => _$PackageShapeToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true, constructor: '_allFields')
+@JsonSerializable(constructor: '_allFields')
 class LibraryShape {
   final Uri uri;
 
@@ -157,7 +157,7 @@ sealed class NamespaceFilter {
 }
 
 /// Filter on an imported/exported namespace on the form `show foo, bar, ...`
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 final class NamespaceShowFilter extends NamespaceFilter {
   Set<String> get show => UnmodifiableSetView(_show);
   final Set<String> _show;
@@ -230,7 +230,7 @@ final class NamespaceShowFilter extends NamespaceFilter {
 }
 
 /// Filter on an imported/exported namespace on the form `hide foo, bar, ...`
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 final class NamespaceHideFilter extends NamespaceFilter {
   Set<String> get hide => UnmodifiableSetView(_hide);
   final Set<String> _hide;
@@ -344,7 +344,7 @@ sealed class LibraryMemberShape {
   }
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 final class FunctionShape extends LibraryMemberShape {
   final List<PositionalParameterShape> positionalParameters;
   final List<NamedParameterShape> namedParameters;
@@ -362,7 +362,7 @@ final class FunctionShape extends LibraryMemberShape {
   Map<String, dynamic> _toJson() => _$FunctionShapeToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 final class EnumShape extends LibraryMemberShape {
   EnumShape({required super.name});
 
@@ -373,7 +373,7 @@ final class EnumShape extends LibraryMemberShape {
   Map<String, dynamic> _toJson() => _$EnumShapeToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 final class ClassShape extends LibraryMemberShape {
   ClassShape({required super.name});
 
@@ -384,7 +384,7 @@ final class ClassShape extends LibraryMemberShape {
   Map<String, dynamic> _toJson() => _$ClassShapeToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 final class MixinShape extends LibraryMemberShape {
   MixinShape({required super.name});
 
@@ -395,7 +395,7 @@ final class MixinShape extends LibraryMemberShape {
   Map<String, dynamic> _toJson() => _$MixinShapeToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 final class ExtensionShape extends LibraryMemberShape {
   ExtensionShape({required super.name});
 
@@ -406,7 +406,7 @@ final class ExtensionShape extends LibraryMemberShape {
   Map<String, dynamic> _toJson() => _$ExtensionShapeToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 final class FunctionTypeAliasShape extends LibraryMemberShape {
   FunctionTypeAliasShape({required super.name});
 
@@ -417,7 +417,7 @@ final class FunctionTypeAliasShape extends LibraryMemberShape {
   Map<String, dynamic> _toJson() => _$FunctionTypeAliasShapeToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 final class ClassTypeAliasShape extends LibraryMemberShape {
   ClassTypeAliasShape({required super.name});
 
@@ -428,7 +428,7 @@ final class ClassTypeAliasShape extends LibraryMemberShape {
   Map<String, dynamic> _toJson() => _$ClassTypeAliasShapeToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 final class VariableShape extends LibraryMemberShape {
   final bool hasGetter;
   final bool hasSetter;
@@ -446,7 +446,7 @@ final class VariableShape extends LibraryMemberShape {
   Map<String, dynamic> _toJson() => _$VariableShapeToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 final class PositionalParameterShape {
   final bool isOptional;
 
@@ -459,7 +459,7 @@ final class PositionalParameterShape {
   Map<String, dynamic> toJson() => _$PositionalParameterShapeToJson(this);
 }
 
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 final class NamedParameterShape {
   final String name;
   final bool isRequired;

@@ -20,8 +20,7 @@ Map<String, dynamic> _$PackageShapeToJson(PackageShape instance) =>
     <String, dynamic>{
       'name': instance.name,
       'version': _versionToJson(instance.version),
-      'libraries':
-          instance.libraries.map((k, e) => MapEntry(k.toString(), e.toJson())),
+      'libraries': instance.libraries.map((k, e) => MapEntry(k.toString(), e)),
     };
 
 LibraryShape _$LibraryShapeFromJson(Map<String, dynamic> json) =>
@@ -48,12 +47,10 @@ LibraryShape _$LibraryShapeFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$LibraryShapeToJson(LibraryShape instance) =>
     <String, dynamic>{
       'uri': instance.uri.toString(),
-      'imports': instance.imports.map((k, e) =>
-          MapEntry(k, e.map((k, e) => MapEntry(k.toString(), e.toJson())))),
-      'exports':
-          instance.exports.map((k, e) => MapEntry(k.toString(), e.toJson())),
-      'definedShapes':
-          instance.definedShapes.map((k, e) => MapEntry(k, e.toJson())),
+      'imports': instance.imports.map(
+          (k, e) => MapEntry(k, e.map((k, e) => MapEntry(k.toString(), e)))),
+      'exports': instance.exports.map((k, e) => MapEntry(k.toString(), e)),
+      'definedShapes': instance.definedShapes,
     };
 
 NamespaceShowFilter _$NamespaceShowFilterFromJson(Map<String, dynamic> json) =>
@@ -93,10 +90,8 @@ FunctionShape _$FunctionShapeFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$FunctionShapeToJson(FunctionShape instance) =>
     <String, dynamic>{
       'name': instance.name,
-      'positionalParameters':
-          instance.positionalParameters.map((e) => e.toJson()).toList(),
-      'namedParameters':
-          instance.namedParameters.map((e) => e.toJson()).toList(),
+      'positionalParameters': instance.positionalParameters,
+      'namedParameters': instance.namedParameters,
     };
 
 EnumShape _$EnumShapeFromJson(Map<String, dynamic> json) => EnumShape(
