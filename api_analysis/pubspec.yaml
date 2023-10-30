@@ -22,3 +22,5 @@ dev_dependencies:
   json_serializable: ^6.7.1
   lints: ^2.0.0
   test: ^1.16.0
+  api_analysis_host:
+    path: ../api_analysis_host
