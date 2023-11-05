@@ -15,24 +15,77 @@
 /// Extraction of a PackageShape using only AST analysis.
 library;
 
-import 'dart:io' show Directory;
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/file_system/file_system.dart';
+import 'package:analyzer/file_system/overlay_file_system.dart';
+import 'package:analyzer/file_system/physical_file_system.dart';
+import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
+
+import '../pubapi.dart';
 import 'shapes.dart';
+import '../fast/analyze.dart' show PubspecVersionExt;
 
 Future<void> main(List<String> args) async {
-  if (args.length != 1) {
-    print('Usage: analyze.dart <target>');
-    return;
-  }
+  await PubApi.withApi((api) async {
+    final t = args.single;
+    final info = await api.listVersions(t);
+    // Sort to lowest version first
+    final versions = info.versions.sortedByCompare(
+      (pv) => pv.version,
+      (a, b) => a.compareTo(b),
+    );
 
-  final packagePath = Directory.current.uri.resolve(args.first);
-  final packageShape = await analyzePackage(packagePath.toFilePath());
+    bool isFirst = true;
+    final since = <String, String>{};
+    for (final pv in versions) {
+      if (!pv.pubspec.dart3Compatible) {
+        continue;
+      }
 
-  print(packageShape.toJsonSummary());
+      final files = await api.fetchPackage(pv.archiveUrl);
+      final packagePath = '/pkg';
+      final fs = OverlayResourceProvider(PhysicalResourceProvider.INSTANCE);
+      for (final f in files) {
+        fs.setOverlay(
+          '$packagePath/${f.path}',
+          content: utf8.decode(f.bytes, allowMalformed: true),
+          modificationStamp: 0,
+        );
+      }
+      final lv = pv.pubspec.languageVersion;
+      fs.setOverlay(
+        '$packagePath/.dart_tool/package_config.json',
+        content: json.encode({
+          'configVersion': 2,
+          'packages': [
+            {
+              'name': pv.pubspec.name,
+              'rootUri': packagePath,
+              'packageUri': 'lib/',
+              'languageVersion': '${lv.major}.${lv.minor}'
+            }
+          ],
+          'generated': DateTime.now().toUtc().toIso8601String(),
+          'generator': 'pub',
+          'generatorVersion': '3.0.5'
+        }),
+        modificationStamp: 0,
+      );
+
+      final shape = await analyzePackage(packagePath, fs: fs);
+
+      print('package:${info.name}-${pv.version}');
+      print( shape.toJsonSummary());
+    }
+  });
 }
 
 /// Thrown when shape analysis fails.
@@ -49,8 +102,14 @@ class ShapeAnalysisException implements Exception {
 
 Never _fail(String message) => throw ShapeAnalysisException._(message);
 
-Future<PackageShape> analyzePackage(String packagePath) async {
-  final collection = AnalysisContextCollection(includedPaths: [packagePath]);
+Future<PackageShape> analyzePackage(
+  String packagePath, {
+  ResourceProvider? fs,
+}) async {
+  final collection = AnalysisContextCollection(
+    includedPaths: [packagePath],
+    resourceProvider: fs,
+  );
   final context = collection.contextFor(packagePath);
   final session = context.currentSession;
 
@@ -77,7 +136,7 @@ Future<PackageShape> analyzePackage(String packagePath) async {
     }
     final library = session.getParsedLibrary(f);
     if (library is! ParsedLibraryResult) {
-      _fail('Failed to parse "$u"');
+      _fail('Failed to parse "$u", it is ${library.runtimeType}');
     }
 
     package.addLibrary(library);
@@ -139,18 +198,18 @@ extension on PackageShape {
       switch (d) {
         case FunctionDeclaration d:
           if (d.isGetter || d.isSetter) {
-            if (shape.definedShapes[name] == null) {
-              return; // we've seen the other getter or setter already
+            if (shape.definedShapes.containsKey(d.nameAsString)) {
+              continue; // we've seen the other getter or setter already
               // TODO: Check that the other thing we saw was a getter/setter!
             }
             final accessors = library.units
                 .expand((u) => u.unit.declarations)
                 .whereType<FunctionDeclaration>()
-                .where((d) => d.name.value() == name);
+                .where((dOther) => d.nameAsString == dOther.nameAsString);
             shape.define(VariableShape(
-              name: name,
-              hasGetter: accessors.any((d) => d.isGetter),
-              hasSetter: accessors.any((d) => d.isSetter),
+              name: d.nameAsString,
+              hasGetter: accessors.any((a) => a.isGetter),
+              hasSetter: accessors.any((a) => a.isSetter),
             ));
           } else {
             shape.defineFunction(d);
@@ -260,11 +319,11 @@ extension on LibraryShape {
     assert(!d.isGetter && !d.isSetter);
     final parameters = d.functionExpression.parameters!.parameters;
     define(FunctionShape(
-      name: d.nameAsString,
+      name: d.name.lexeme,
       namedParameters: parameters
           .where((p) => p.isNamed)
           .map((p) => NamedParameterShape(
-              name: p.name!.stringValue!, isRequired: p.isRequired))
+              name: p.name!.lexeme, isRequired: p.isRequired))
           .toList(),
       positionalParameters: parameters
           .where((p) => p.isPositional)
@@ -340,6 +399,8 @@ extension on NamedCompilationUnitMember {
   String get nameAsString {
     final n = name.value();
     if (n is! String) {
+    print(n.runtimeType);
+    print(n.toString());
       _fail('Top-level member has no name: $this');
     }
     return n;

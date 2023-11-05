@@ -34,7 +34,7 @@ final _targets = [
   'http',
 ];
 
-extension on Pubspec {
+extension PubspecVersionExt on Pubspec {
   Version get languageVersion {
     final sdk = (environment ?? {})['sdk'];
     if (sdk is VersionRange) {
