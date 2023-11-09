@@ -13,8 +13,24 @@ import 'shapes.dart';
 
 /// Returns the shape of a given package version.
 ///
-/// The system shape cache is used where possible to save/load shapes.
-Future<PackageShape> fetchShape(String name, Version version) async {
+/// The a cache is used where possible to save/load shapes.
+Future<PackageShape> fetchShape({
+  required String name,
+  required Version version,
+  required String cachePath,
+}) async {
+  final shapeCacheFile = File(path.join(cachePath, '$name-$version.json'));
+
+  // Check if this shape is already cached.
+  if (await shapeCacheFile.exists()) {
+    return PackageShape.fromJson(
+      json.decode(
+        await shapeCacheFile.readAsString(),
+      ),
+    );
+  }
+
+  // Download the package from pub into memory.
   final packagePath = '/tempPackagePath';
   final fs = OverlayResourceProvider(PhysicalResourceProvider.INSTANCE);
 
@@ -51,12 +67,24 @@ Future<PackageShape> fetchShape(String name, Version version) async {
       modificationStamp: 0,
     );
   });
+  final packageShape = await analyzePackage(packagePath, fs: fs);
 
-  return await analyzePackage(packagePath, fs: fs);
+  // Cache the shape.
+  await shapeCacheFile.writeAsString(
+    json.encode(
+      packageShape.toJson(),
+    ),
+  );
+
+  return packageShape;
 }
 
 Future<void> main() async {
-  final packageShape = await fetchShape('retry', Version(1, 0, 0));
+  final packageShape = await fetchShape(
+    name: 'retry',
+    version: Version(1, 0, 0),
+    cachePath: shapeCache(),
+  );
   print(indentedEncoder.convert(packageShape.toJson()));
 }
 
