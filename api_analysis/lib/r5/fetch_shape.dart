@@ -79,15 +79,6 @@ Future<PackageShape> fetchShape({
   return packageShape;
 }
 
-Future<void> main() async {
-  final packageShape = await fetchShape(
-    name: 'retry',
-    version: Version(1, 0, 0),
-    cachePath: shapeCache(),
-  );
-  print(indentedEncoder.convert(packageShape.toJson()));
-}
-
 /// Returns the path to the shape cache directory, which is guaranteed to exist.
 String shapeCache() {
   final shapeCachePath = path.join(systemCache(), 'shapes');
