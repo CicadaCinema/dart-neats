@@ -43,7 +43,7 @@ Future<PackageShape> fetchShape({
     for (final f in files) {
       fs.setOverlay(
         path.join(packagePath, f.path),
-        content: utf8.decode(f.bytes),
+        content: utf8.decode(f.bytes, allowMalformed: true),
         modificationStamp: 0,
       );
     }
