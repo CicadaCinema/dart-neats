@@ -34,44 +34,6 @@ import '../common.dart'
 import '../pubapi.dart';
 import 'shapes.dart';
 
-typedef LibraryMemberShapeModification = ({
-  LibraryMemberShape prev,
-  LibraryMemberShape next,
-});
-
-typedef LibraryShapeChange = ({
-  List<LibraryMemberShape> added,
-  List<LibraryMemberShape> removed,
-  List<LibraryMemberShapeModification> modified,
-});
-
-LibraryShapeChange diffLibraryShapes(LibraryShape prev, LibraryShape next) {
-  final prevMembers = prev.exportedShapes;
-  final nextMembers = next.exportedShapes;
-
-  final prevMemberNames = prevMembers.keys.toSet();
-  final nextMemberNames = nextMembers.keys.toSet();
-
-  return (
-    added: nextMembers.entries
-        .where((m) => !prevMemberNames.contains(m.key))
-        .map((m) => m.value)
-        .toList(),
-    removed: prevMembers.entries
-        .where((m) => !nextMemberNames.contains(m.key))
-        .map((m) => m.value)
-        .toList(),
-    modified: prevMembers.entries
-        .where((m) =>
-            nextMemberNames.contains(m.key) && m.value != nextMembers[m.key]!)
-        .map((m) => (
-              prev: m.value,
-              next: nextMembers[m.key]!,
-            ))
-        .toList(),
-  );
-}
-
 const _usage = '''Usage:
 - analyze.dart local <package-path>
 - analyze.dart hosted <package-name>''';
